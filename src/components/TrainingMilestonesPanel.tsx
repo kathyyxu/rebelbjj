@@ -39,7 +39,7 @@ type TrainingMilestonesPanelProps = {
 
 export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilestonesPanelProps) => {
   const { pick } = useLocale();
-  const { address, storageScope, hasEmailIdentity, hasWalletIdentity } = useIdentity();
+  const { address, storageScope, hasEmailIdentity, hasWalletIdentity, walletName, walletProvider } = useIdentity();
   const [milestoneClaims, setMilestoneClaims] = useState<Record<string, TrainingMilestoneClaim>>(() => readTrainingMilestoneClaims(storageScope));
   const [isFundingDevnet, setIsFundingDevnet] = useState(false);
   const [claimingMilestoneId, setClaimingMilestoneId] = useState<string | null>(null);
@@ -50,6 +50,8 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
   const streak = getTrainingStreak(sortedLogs);
   const totalSessions = getTrainingSessionCount(sortedLogs);
   const verifiedSessionCount = getVerifiedTrainingSessionCount(verifications);
+  const isPhantomWallet = walletProvider === "phantom";
+  const devnetSignerAddress = isPhantomWallet ? address : null;
   const rewardSummary = useMemo(
     () => buildTrainingRewardSummary(sortedLogs, milestoneClaims),
     [milestoneClaims, sortedLogs],
@@ -67,7 +69,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
   }, [storageScope]);
 
   useEffect(() => {
-    if (!address) {
+    if (!devnetSignerAddress) {
       setDevnetBalance(null);
       return;
     }
@@ -75,7 +77,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
     let cancelled = false;
     void (async () => {
       try {
-        const status = await getDevnetWalletStatus(address);
+        const status = await getDevnetWalletStatus(devnetSignerAddress);
         if (!cancelled) setDevnetBalance(status.sol);
       } catch {
         if (!cancelled) setDevnetBalance(null);
@@ -85,7 +87,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [devnetSignerAddress]);
 
   const milestoneCards = useMemo<MilestoneCard[]>(() => {
     return TRAINING_MILESTONES.map((milestone) => {
@@ -103,13 +105,13 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
   }, [milestoneClaims, sortedLogs, verifications]);
 
   const handleClaimDevnetSol = async () => {
-    if (!address) {
+    if (!devnetSignerAddress) {
       toast.error(
         pick({
-          "zh-CN": "请先连接 Phantom。",
-          "zh-TW": "請先連接 Phantom。",
-          en: "Connect Phantom first.",
-          ja: "先に Phantom を接続してください。",
+          "zh-CN": "请先连接 Phantom。OKX 可作为身份登录，但当前 Devnet proof 仍用 Phantom 签名。",
+          "zh-TW": "請先連接 Phantom。OKX 可作為身份登入，但目前 Devnet proof 仍用 Phantom 簽名。",
+          en: "Connect Phantom first. OKX can be used for identity login, but Devnet proofs still use Phantom signing.",
+          ja: "先に Phantom を接続してください。OKX はIDログイン用で、Devnet proof は Phantom 署名を使います。",
         }),
       );
       return;
@@ -117,7 +119,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
 
     setIsFundingDevnet(true);
     try {
-      const result = await requestDevnetAirdrop(address);
+      const result = await requestDevnetAirdrop(devnetSignerAddress);
       setDevnetBalance(result.sol);
       toast.success(
         pick({
@@ -144,13 +146,13 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
   };
 
   const handleClaimMilestone = async (milestone: TrainingMilestoneDefinition) => {
-    if (!address) {
+    if (!devnetSignerAddress) {
       toast.error(
         pick({
-          "zh-CN": "请先连接 Phantom，再领取训练里程碑证明。",
-          "zh-TW": "請先連接 Phantom，再領取訓練里程碑證明。",
-          en: "Connect Phantom before claiming a milestone proof.",
-          ja: "マイルストーン証明を受け取る前に Phantom を接続してください。",
+          "zh-CN": "请先连接 Phantom，再领取训练里程碑证明。OKX 登录已支持，但这个 Devnet proof 仍需要 Phantom 签名。",
+          "zh-TW": "請先連接 Phantom，再領取訓練里程碑證明。OKX 登入已支援，但這個 Devnet proof 仍需要 Phantom 簽名。",
+          en: "Connect Phantom before claiming a milestone proof. OKX login is supported, but this Devnet proof still needs Phantom signing.",
+          ja: "マイルストーン証明を受け取る前に Phantom を接続してください。OKX ログインは対応済みですが、この Devnet proof は Phantom 署名が必要です。",
         }),
       );
       return;
@@ -180,7 +182,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
       return;
     }
 
-    const walletStatus = await getDevnetWalletStatus(address);
+    const walletStatus = await getDevnetWalletStatus(devnetSignerAddress);
     setDevnetBalance(walletStatus.sol);
     if (walletStatus.needsAirdrop) {
       toast.error(
@@ -219,7 +221,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
       });
 
       const attestation = await sendTrainingMemoAttestation(
-        address,
+        devnetSignerAddress,
         milestone,
         digest,
         currentValue,
@@ -232,7 +234,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
         ...prev,
         [milestone.id]: {
           milestoneId: milestone.id,
-          walletAddress: address,
+          walletAddress: devnetSignerAddress,
           digest,
           createdAt: Date.now(),
           network: attestation.networkLabel,
@@ -567,10 +569,15 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
                     </span>
                     <span className={`phantom-identity-chip ${hasWalletIdentity ? "phantom-identity-chip-live" : ""}`}>
                       {hasWalletIdentity
-                        ? pick({ "zh-CN": "Phantom 已连接", "zh-TW": "Phantom 已連接", en: "Phantom connected", ja: "Phantom 接続済み" })
-                        : pick({ "zh-CN": "Phantom 尚未连接", "zh-TW": "Phantom 尚未連接", en: "Phantom not connected", ja: "Phantom 未接続" })}
+                        ? pick({
+                            "zh-CN": `${walletName ?? "钱包"} 已连接`,
+                            "zh-TW": `${walletName ?? "錢包"} 已連接`,
+                            en: `${walletName ?? "Wallet"} connected`,
+                            ja: `${walletName ?? "ウォレット"} 接続済み`,
+                          })
+                        : pick({ "zh-CN": "钱包尚未连接", "zh-TW": "錢包尚未連接", en: "Wallet not connected", ja: "ウォレット未接続" })}
                     </span>
-                    {address ? (
+                    {devnetSignerAddress ? (
                       <span className="phantom-identity-chip phantom-identity-chip-live">
                         {devnetBalance === null
                           ? pick({ "zh-CN": "Devnet 检查中", "zh-TW": "Devnet 檢查中", en: "Devnet checking", ja: "Devnet確認中" })
@@ -584,7 +591,7 @@ export const TrainingMilestonesPanel = ({ variant = "compact" }: TrainingMilesto
                     ) : null}
                   </div>
 
-                  {address ? (
+                  {devnetSignerAddress ? (
                     <button
                       type="button"
                       className="phantom-proof-link phantom-proof-button phantom-objective-devnet-button"

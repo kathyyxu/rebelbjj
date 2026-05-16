@@ -7690,6 +7690,12 @@
     color: var(--persona-cyan);
   }
 
+  .global-auth-button-okx {
+    background: #000;
+    color: #fff;
+    border-color: var(--persona-cyan);
+  }
+
   .global-wallet-wrap {
     display: inline-flex;
     align-items: center;

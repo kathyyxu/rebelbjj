@@ -22,8 +22,13 @@ export const GlobalTopBar = () => {
     address,
     shortAddress,
     isInstalled,
+    isPhantomInstalled,
+    isOkxAvailable,
     isConnecting,
-    connect,
+    connectingWallet,
+    walletName,
+    connectPhantom,
+    connectOkx,
     disconnect,
     chainId,
     emailIdentity,
@@ -54,18 +59,25 @@ export const GlobalTopBar = () => {
     ja: "メール",
   });
 
-  const connectLabel = pick({
-    "zh-CN": isConnecting ? "连接中..." : "连接 Phantom",
-    "zh-TW": isConnecting ? "連接中..." : "連接 Phantom",
-    en: isConnecting ? "Connecting..." : "Connect Phantom",
-    ja: isConnecting ? "接続中..." : "Phantom Connect",
+  const connectPhantomLabel = pick({
+    "zh-CN": connectingWallet === "phantom" ? "连接中..." : "连接 Phantom",
+    "zh-TW": connectingWallet === "phantom" ? "連接中..." : "連接 Phantom",
+    en: connectingWallet === "phantom" ? "Connecting..." : "Connect Phantom",
+    ja: connectingWallet === "phantom" ? "接続中..." : "Phantom Connect",
+  });
+
+  const connectOkxLabel = pick({
+    "zh-CN": connectingWallet === "okx" ? "连接中..." : "连接 OKX 钱包",
+    "zh-TW": connectingWallet === "okx" ? "連接中..." : "連接 OKX 錢包",
+    en: connectingWallet === "okx" ? "Connecting..." : "Connect OKX Wallet",
+    ja: connectingWallet === "okx" ? "接続中..." : "OKX Wallet Connect",
   });
 
   const missingWalletLabel = pick({
-    "zh-CN": "未安装 Phantom",
-    "zh-TW": "未安裝 Phantom",
-    en: "Phantom Missing",
-    ja: "Phantom 未導入",
+    "zh-CN": "钱包未就绪",
+    "zh-TW": "錢包未就緒",
+    en: "Wallet Missing",
+    ja: "ウォレット未準備",
   });
 
   const localeBadge = {
@@ -80,9 +92,14 @@ export const GlobalTopBar = () => {
   }`;
 
   const walletTitle = address && chainId
-    ? `${walletLabel}: ${shortAddress} / ${chainId}`
+    ? `${walletLabel}: ${walletName ?? "Wallet"} ${shortAddress} / ${chainId}`
     : isInstalled
-      ? connectLabel
+      ? pick({
+          "zh-CN": "选择 Phantom 或 OKX 钱包",
+          "zh-TW": "選擇 Phantom 或 OKX 錢包",
+          en: "Choose Phantom or OKX Wallet",
+          ja: "Phantom または OKX Wallet を選択",
+        })
       : missingWalletLabel;
 
   const emailTitle = emailIdentity?.email
@@ -154,13 +171,9 @@ export const GlobalTopBar = () => {
             type="button"
             className={`global-icon-button global-wallet-icon-button shine ${address ? "global-icon-button-connected" : ""}`}
             onClick={() => {
-              if (!address) {
-                void connect();
-                return;
-              }
               setIsAuthOpen(true);
             }}
-            disabled={!isInstalled || isConnecting}
+            disabled={isConnecting}
             aria-label={walletLabel}
             title={walletTitle}
           >
@@ -264,12 +277,12 @@ export const GlobalTopBar = () => {
               </div>
               <p className="global-auth-copy">
                 {address
-                  ? `${shortAddress} / ${chainId}`
+                  ? `${walletName ?? "Wallet"} ${shortAddress} / ${chainId}`
                   : pick({
-                      "zh-CN": "连接 Phantom 后，训练里程碑可以写入 Solana Devnet。",
-                      "zh-TW": "連接 Phantom 後，訓練里程碑可以寫入 Solana Devnet。",
-                      en: "Connect Phantom to write milestone proofs to Solana Devnet.",
-                      ja: "Phantom を接続すると、マイルストーンを Solana Devnet に書き込めます。",
+                      "zh-CN": "连接 Phantom 进行 Devnet 签名，或用 OKX 钱包建立 Solana 训练身份。",
+                      "zh-TW": "連接 Phantom 進行 Devnet 簽名，或用 OKX 錢包建立 Solana 訓練身份。",
+                      en: "Connect Phantom for Devnet signing, or use OKX Wallet for your Solana training identity.",
+                      ja: "Devnet 署名は Phantom、Solana トレーニングID は OKX Wallet でも使えます。",
                     })}
               </p>
               <div className="global-auth-actions">
@@ -277,17 +290,33 @@ export const GlobalTopBar = () => {
                   type="button"
                   className="global-auth-button"
                   onClick={() => {
-                    if (address) {
+                    if (address && walletName === "Phantom") {
                       void disconnect();
                       return;
                     }
-                    void connect();
+                    void connectPhantom();
                   }}
-                  disabled={!isInstalled || isConnecting}
+                  disabled={!isPhantomInstalled || isConnecting}
                 >
-                  {address
+                  {address && walletName === "Phantom"
                     ? pick({ "zh-CN": "断开 Phantom", "zh-TW": "中斷 Phantom", en: "Disconnect Phantom", ja: "Phantom を切断" })
-                    : connectLabel}
+                    : connectPhantomLabel}
+                </button>
+                <button
+                  type="button"
+                  className="global-auth-button global-auth-button-okx"
+                  onClick={() => {
+                    if (address && walletName === "OKX") {
+                      void disconnect();
+                      return;
+                    }
+                    void connectOkx();
+                  }}
+                  disabled={!isOkxAvailable || isConnecting}
+                >
+                  {address && walletName === "OKX"
+                    ? pick({ "zh-CN": "断开 OKX", "zh-TW": "中斷 OKX", en: "Disconnect OKX", ja: "OKX を切断" })
+                    : connectOkxLabel}
                 </button>
               </div>
             </section>
