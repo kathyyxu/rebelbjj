@@ -25,3 +25,10 @@ anchor/.anchor
 *.sln
 *.sw?
 .vercel
+
+# Local agent/tooling state
+.agents/
+.cursor/
+.cursor-plugin/
+skills-lock.json
+submission-*.md
