@@ -40,7 +40,6 @@ import {
 import {
   buildTrainingPlanCoachContext,
   generateTrainingPlanWithEnhancement,
-  TrainingPlanSource,
 } from "@/lib/trainingPlanLlm";
 import { ensurePlanHasPraise } from "@/lib/trainingPlanPraise";
 import { AgeRange, isProfileComplete, readUserProfile } from "@/lib/userProfile";
@@ -124,7 +123,6 @@ const TrainingPlan = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isScopeReady, setIsScopeReady] = useState(true);
   const [livePlan, setLivePlan] = useState<TrainingPlanResult | null>(null);
-  const [planSource, setPlanSource] = useState<TrainingPlanSource>("rules");
   const [isEnhancingPlan, setIsEnhancingPlan] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const seededTodayRef = useRef(false);
@@ -205,7 +203,6 @@ const TrainingPlan = () => {
     setActiveRecordId(null);
     seededTodayRef.current = false;
     setLivePlan(null);
-    setPlanSource("rules");
     setIsScopeReady(true);
   }, [storageScope]);
 
@@ -217,7 +214,6 @@ const TrainingPlan = () => {
   useEffect(() => {
     if (!isScopeReady || !profile || !isProfileComplete(profile)) {
       setLivePlan(null);
-      setPlanSource("rules");
       setIsEnhancingPlan(false);
       return;
     }
@@ -234,10 +230,9 @@ const TrainingPlan = () => {
       storageScope,
       controller.signal,
     )
-      .then(({ plan, source }) => {
+      .then(({ plan }) => {
         if (planGenerationRef.current !== generationId) return;
         setLivePlan(plan);
-        setPlanSource(source);
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -287,14 +282,13 @@ const TrainingPlan = () => {
     if (!profile || !isProfileComplete(profile) || isEnhancingPlan) return;
     setIsEnhancingPlan(true);
     try {
-      const { plan, source } = await generateTrainingPlanWithEnhancement(
+      const { plan } = await generateTrainingPlanWithEnhancement(
         profile,
         locale,
         difficultyOffset,
         storageScope,
       );
       setLivePlan(plan);
-      setPlanSource(source);
       const record = persistPlan(plan);
       if (record) setActiveRecordId(record.id);
       toast.success(
@@ -725,19 +719,12 @@ const TrainingPlan = () => {
                       en: "AI COACH WRITING…",
                       ja: "AIコーチ生成中…",
                     })
-                  : planSource === "llm"
-                    ? pick({
-                        "zh-CN": "AI 教练 · 规则骨架",
-                        "zh-TW": "AI 教練 · 規則骨架",
-                        en: "AI COACH · RULE SKELETON",
-                        ja: "AIコーチ・ルール骨格",
-                      })
-                    : pick({
-                        "zh-CN": "规则引擎（API 未启用或失败）",
-                        "zh-TW": "規則引擎（API 未啟用或失敗）",
-                        en: "RULE ENGINE (API OFFLINE)",
-                        ja: "ルールエンジン（API未使用）",
-                      })}
+                  : pick({
+                      "zh-CN": "AI 教练 · 今日方案",
+                      "zh-TW": "AI 教練 · 今日方案",
+                      en: "AI COACH · TODAY'S PLAN",
+                      ja: "AIコーチ · 今日のプラン",
+                    })}
             </div>
             <h1 className="atlas-title persona-page-title">
               {pick({
