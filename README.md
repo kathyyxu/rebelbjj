@@ -11,6 +11,15 @@
 
 Built for Build with XAgent x OKX.
 
+## Deploy (production only)
+
+Always deploy to the linked Vercel project **`phantom-thief-s-mat-main`** (production URL above). Do not use the separate `rebelbjj` Vercel project alias.
+
+```bash
+npx vercel link --project phantom-thief-s-mat-main --yes
+npx vercel deploy --prod --yes
+```
+
 ## Layout
 
 - `anchor/` - Solana Program in Rust + Anchor, meant for devnet deployment
