@@ -1,6 +1,8 @@
-# Rebel BJJ — AI 教练 · 链上柔术训练伴侣
+# Rebel BJJ — 我的柔术进化地图
 
-> 专为女性巴西柔术练习者设计的 AI 驱动训练系统。基于你的个人资料与实时状态，生成有温度、可执行、可调整的专属方案。关键成就永久上链，不可篡改。
+> 专为 ADHD 女性设计的 BJJ 训练伴侣 | Solana 链上里程碑 · 游戏化打卡 · AI 个性化方案
+
+基于训练者的个人资料和实时状态，生成有温度、可执行、可调整的专属方案。关键成就永久上链，不可篡改。
 
 [![Vercel](https://img.shields.io/badge/线上地址-phantom--thief--s--mat--main.vercel.app-000?logo=vercel)](https://phantom-thief-s-mat-main.vercel.app)
 [![GitHub](https://img.shields.io/badge/开源仓库-rebelbjj-181717?logo=github)](https://github.com/kathyyxu/rebelbjj)
