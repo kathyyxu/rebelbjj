@@ -165,7 +165,7 @@ const resolveApiKey = (provider: Provider): string | undefined => {
 };
 
 const callGemini = async (apiKey: string, prompt: string): Promise<string> => {
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url, {
     method: "POST",
@@ -176,6 +176,8 @@ const callGemini = async (apiKey: string, prompt: string): Promise<string> => {
     }),
   });
   if (!response.ok) {
+    const detail = await response.text();
+    console.error("gemini error", response.status, detail.slice(0, 400));
     throw new Error(`gemini ${response.status}`);
   }
   const data = (await response.json()) as {
