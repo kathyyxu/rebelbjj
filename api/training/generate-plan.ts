@@ -79,7 +79,11 @@ const trimItems = (value: unknown, maxCount: number): string[] | undefined => {
 
 const parseEnhancement = (raw: string): LlmEnhancement | null => {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = (fenced?.[1] ?? raw).trim();
+  let candidate = (fenced?.[1] ?? raw).trim();
+  if (!candidate.startsWith("{")) {
+    const objectMatch = candidate.match(/\{[\s\S]*\}/);
+    if (objectMatch) candidate = objectMatch[0];
+  }
   try {
     const parsed = JSON.parse(candidate) as Record<string, unknown>;
     const personalization =
@@ -172,7 +176,11 @@ const callGemini = async (apiKey: string, prompt: string): Promise<string> => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.65, maxOutputTokens: 2048 },
+      generationConfig: {
+        temperature: 0.65,
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",
+      },
     }),
   });
   if (!response.ok) {
@@ -301,6 +309,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const raw = await callProvider(provider, apiKey, prompt);
     const enhancement = parseEnhancement(raw);
     if (!enhancement) {
+      console.error("invalid llm json", raw.slice(0, 600));
       return res.status(502).json({ error: "invalid_llm_response", fallback: true });
     }
     return res.status(200).json({ enhancement, provider });
