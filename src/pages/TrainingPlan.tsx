@@ -38,9 +38,11 @@ import {
   TrainingPlanSection,
 } from "@/lib/trainingPlanEngine";
 import {
+  buildTrainingPlanCoachContext,
   generateTrainingPlanWithEnhancement,
   TrainingPlanSource,
 } from "@/lib/trainingPlanLlm";
+import { ensurePlanHasPraise } from "@/lib/trainingPlanPraise";
 import { AgeRange, isProfileComplete, readUserProfile } from "@/lib/userProfile";
 
 const PlanSectionCard = ({ section }: { section: TrainingPlanSection }) => (
@@ -141,6 +143,16 @@ const TrainingPlan = () => {
     : null;
 
   const displayedPlan = activeRecord?.plan ?? livePlan;
+
+  const displayedPlanWithPraise = useMemo(() => {
+    if (!displayedPlan || !profile || !isProfileComplete(profile)) return displayedPlan;
+    return ensurePlanHasPraise(
+      displayedPlan,
+      profile,
+      locale,
+      buildTrainingPlanCoachContext(storageScope),
+    );
+  }, [displayedPlan, locale, profile, storageScope]);
 
   const sessionPlanRecord = useMemo(() => {
     if (activeRecord) return activeRecord;
@@ -626,7 +638,7 @@ const TrainingPlan = () => {
     );
   }
 
-  if (!displayedPlan) {
+  if (!displayedPlanWithPraise) {
     return (
       <main className="atlas-app">
         <div className="atlas-shell">
@@ -743,12 +755,12 @@ const TrainingPlan = () => {
                 })}
               </span>
             </h1>
-            <p className="atlas-description phantom-plan-opening">{displayedPlan.opening}</p>
-            <p className="phantom-plan-summary-line">{displayedPlan.summary}</p>
+            <p className="atlas-description phantom-plan-opening">{displayedPlanWithPraise.opening}</p>
+            <p className="phantom-plan-summary-line">{displayedPlanWithPraise.summary}</p>
             <div className="phantom-diary-meta-line">
               <span>
                 {pick({ "zh-CN": "强度：", "zh-TW": "強度：", en: "Intensity: ", ja: "強度：" })}
-                <strong>{displayedPlan.intensity}</strong>
+                <strong>{displayedPlanWithPraise.intensity}</strong>
               </span>
               <span>
                 {pick({ "zh-CN": "难度调节：", "zh-TW": "難度調節：", en: "Difficulty tweak: ", ja: "難易度：" })}
@@ -868,29 +880,39 @@ const TrainingPlan = () => {
             <section className="atlas-panel atlas-knowledge phantom-plan-personalization">
               <div className="atlas-section-head">
                 <p className="atlas-section-tag">COACH</p>
-                <h2 className="atlas-section-title">{displayedPlan.personalization.title}</h2>
+                <h2 className="atlas-section-title">{displayedPlanWithPraise.personalization.title}</h2>
               </div>
               <div className="phantom-plan-coach-notes">
-                {displayedPlan.personalization.items.map((item) => (
+                {displayedPlanWithPraise.personalization.items.map((item) => (
                   <p key={item}>{item}</p>
                 ))}
               </div>
             </section>
 
             <section className="phantom-plan-grid">
-              <PlanSectionCard section={displayedPlan.warmup} />
-              <PlanSectionCard section={displayedPlan.technique} />
-              <PlanSectionCard section={displayedPlan.conditioning} />
-              <PlanSectionCard section={displayedPlan.cooldown} />
+              <PlanSectionCard section={displayedPlanWithPraise.warmup} />
+              <PlanSectionCard section={displayedPlanWithPraise.technique} />
+              <PlanSectionCard section={displayedPlanWithPraise.conditioning} />
+              <PlanSectionCard section={displayedPlanWithPraise.cooldown} />
+            </section>
+
+            <section className="atlas-panel atlas-knowledge phantom-plan-praise-panel">
+              <div className="atlas-section-head">
+                <p className="atlas-section-tag">PRAISE</p>
+                <h2 className="atlas-section-title">
+                  {pick({
+                    "zh-CN": "夸夸你的三个优点",
+                    "zh-TW": "夸夸你的三個優點",
+                    en: "Three strengths today",
+                    ja: "今日の三つの良いところ",
+                  })}
+                </h2>
+              </div>
+              <p className="phantom-plan-praise-body">{displayedPlanWithPraise.praise}</p>
             </section>
 
             <section className="phantom-plan-complete">
-              <p className="phantom-plan-closing">{displayedPlan.closing}</p>
-              {displayedPlan.praise ? (
-                <div className="phantom-plan-praise" aria-label="AI coach praise">
-                  <p className="phantom-plan-praise-body">{displayedPlan.praise}</p>
-                </div>
-              ) : null}
+              <p className="phantom-plan-closing">{displayedPlanWithPraise.closing}</p>
               {todayCompletion ? (
                 <div className="phantom-plan-complete-done">
                   <CheckCircle2 className="h-5 w-5" aria-hidden />
@@ -1032,7 +1054,7 @@ const TrainingPlan = () => {
         <div className="phantom-pdf-capture-host" aria-hidden="true">
           <div ref={exportRef}>
             <TrainingPlanPdfSheet
-              plan={displayedPlan}
+              plan={displayedPlanWithPraise}
               exportTitle={exportTitle}
               identityLabel={currentIdentityLabel}
             />

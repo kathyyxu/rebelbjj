@@ -7,6 +7,7 @@ import {
 } from "@/lib/trainingPlanEngine";
 import { readTrainingPlanHistory } from "@/lib/trainingPlanHistory";
 import { readTrainingLogs } from "@/lib/trainingLogs";
+import { buildTrainingPlanPraise, ensurePlanHasPraise } from "@/lib/trainingPlanPraise";
 import { UserProfile } from "@/lib/userProfile";
 
 const API_BASE = import.meta.env.VITE_RUST_API_BASE ?? "";
@@ -155,11 +156,15 @@ export const enhanceTrainingPlanWithLlm = async (
     storageScope,
     signal,
   );
+  const context = buildTrainingPlanCoachContext(storageScope);
+  const baseWithPraise = ensurePlanHasPraise(basePlan, profile, locale, context);
+
   if (!enhancement) {
-    return { plan: basePlan, source: "rules" };
+    return { plan: baseWithPraise, source: "rules" };
   }
+  const merged = mergeLlmEnhancement(baseWithPraise, enhancement);
   return {
-    plan: mergeLlmEnhancement(basePlan, enhancement),
+    plan: ensurePlanHasPraise(merged, profile, locale, context),
     source: "llm",
   };
 };
@@ -172,8 +177,13 @@ export const generateTrainingPlanWithEnhancement = async (
   signal?: AbortSignal,
 ): Promise<{ plan: TrainingPlanResult; source: TrainingPlanSource }> => {
   const base = generateTrainingPlan(profile, locale, difficultyOffset);
+  const context = buildTrainingPlanCoachContext(storageScope);
+  const baseWithPraise = {
+    ...base,
+    praise: buildTrainingPlanPraise(profile, locale, context),
+  };
   return enhanceTrainingPlanWithLlm(
-    base,
+    baseWithPraise,
     profile,
     locale,
     difficultyOffset,
