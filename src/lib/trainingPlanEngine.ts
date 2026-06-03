@@ -36,6 +36,8 @@ export type TrainingPlanResult = {
   technique: TrainingPlanSection;
   conditioning: TrainingPlanSection;
   cooldown: TrainingPlanSection;
+  /** LLM-generated encouragement (3 personalized strengths); rules-only plans omit this. */
+  praise?: string;
 };
 
 type LocaleVariants<T> = Partial<Record<AppLocale, T>> & { "zh-CN": T };

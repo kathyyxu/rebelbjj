@@ -26,12 +26,14 @@ describe("mergeLlmEnhancement", () => {
     const enhancement: TrainingPlanLlmEnhancement = {
       opening: "LLM 开场",
       closing: "LLM 收尾",
+      praise: "✨ 今天夸夸你的三个优点：\n1. 坚持训练\n2. 认真记录\n3. 疲惫仍上线",
       personalization: { items: ["LLM 要点 1", "LLM 要点 2"] },
       technique: { note: "技术课注意呼吸" },
     };
     const merged = mergeLlmEnhancement(basePlan, enhancement);
     expect(merged.opening).toBe("LLM 开场");
     expect(merged.closing).toBe("LLM 收尾");
+    expect(merged.praise).toContain("三个优点");
     expect(merged.personalization.items).toEqual(["LLM 要点 1", "LLM 要点 2"]);
     expect(merged.technique.note).toBe("技术课注意呼吸");
     expect(merged.technique.items).toEqual(["侧压逃脱"]);

@@ -1,18 +1,49 @@
+import { parseISO, startOfDay, startOfWeek } from "date-fns";
 import { AppLocale } from "@/lib/locale";
 import {
   generateTrainingPlan,
   PlanDifficultyOffset,
   TrainingPlanResult,
 } from "@/lib/trainingPlanEngine";
+import { readTrainingPlanHistory } from "@/lib/trainingPlanHistory";
+import { readTrainingLogs } from "@/lib/trainingLogs";
 import { UserProfile } from "@/lib/userProfile";
 
 const API_BASE = import.meta.env.VITE_RUST_API_BASE ?? "";
 
 export type TrainingPlanSource = "rules" | "llm";
 
+export type TrainingPlanCoachContext = {
+  sessionsThisWeek: number;
+  totalLoggedSessions: number;
+  completedPlanSessions: number;
+  savedPlanCount: number;
+};
+
+export const buildTrainingPlanCoachContext = (
+  storageScope?: string | null,
+): TrainingPlanCoachContext => {
+  const logs = readTrainingLogs(storageScope);
+  const history = readTrainingPlanHistory(storageScope);
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+  const sessionsThisWeek = logs.filter((entry) => {
+    const day = startOfDay(parseISO(entry.date));
+    return day >= weekStart;
+  }).length;
+
+  return {
+    sessionsThisWeek,
+    totalLoggedSessions: logs.length,
+    completedPlanSessions: history.filter((record) => record.completedAt).length,
+    savedPlanCount: history.length,
+  };
+};
+
 export type TrainingPlanLlmEnhancement = {
   opening?: string;
   closing?: string;
+  praise?: string;
   personalization?: {
     title?: string;
     items?: string[];
@@ -41,6 +72,7 @@ export const mergeLlmEnhancement = (
     ...base,
     opening: enhancement.opening?.trim() || base.opening,
     closing: enhancement.closing?.trim() || base.closing,
+    praise: enhancement.praise?.trim() || base.praise,
     personalization: {
       title: enhancement.personalization?.title?.trim() || base.personalization.title,
       items:
@@ -66,6 +98,7 @@ export const fetchTrainingPlanLlmEnhancement = async (
   profile: UserProfile,
   locale: AppLocale,
   difficultyOffset: PlanDifficultyOffset,
+  storageScope?: string | null,
   signal?: AbortSignal,
 ): Promise<TrainingPlanLlmEnhancement | null> => {
   try {
@@ -76,6 +109,7 @@ export const fetchTrainingPlanLlmEnhancement = async (
         locale,
         difficultyOffset,
         profile,
+        coachContext: buildTrainingPlanCoachContext(storageScope),
         basePlan: {
           headline: basePlan.headline,
           opening: basePlan.opening,
@@ -110,6 +144,7 @@ export const enhanceTrainingPlanWithLlm = async (
   profile: UserProfile,
   locale: AppLocale,
   difficultyOffset: PlanDifficultyOffset,
+  storageScope?: string | null,
   signal?: AbortSignal,
 ): Promise<{ plan: TrainingPlanResult; source: TrainingPlanSource }> => {
   const enhancement = await fetchTrainingPlanLlmEnhancement(
@@ -117,6 +152,7 @@ export const enhanceTrainingPlanWithLlm = async (
     profile,
     locale,
     difficultyOffset,
+    storageScope,
     signal,
   );
   if (!enhancement) {
@@ -132,8 +168,16 @@ export const generateTrainingPlanWithEnhancement = async (
   profile: UserProfile,
   locale: AppLocale,
   difficultyOffset: PlanDifficultyOffset = 0,
+  storageScope?: string | null,
   signal?: AbortSignal,
 ): Promise<{ plan: TrainingPlanResult; source: TrainingPlanSource }> => {
   const base = generateTrainingPlan(profile, locale, difficultyOffset);
-  return enhanceTrainingPlanWithLlm(base, profile, locale, difficultyOffset, signal);
+  return enhanceTrainingPlanWithLlm(
+    base,
+    profile,
+    locale,
+    difficultyOffset,
+    storageScope,
+    signal,
+  );
 };

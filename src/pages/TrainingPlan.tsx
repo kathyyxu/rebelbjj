@@ -99,6 +99,11 @@ const TrainingPlanPdfSheet = ({ plan, exportTitle, identityLabel }: TrainingPlan
           ))}
         </article>
       ))}
+      {plan.praise ? (
+        <article className="phantom-export-card">
+          <p>{plan.praise}</p>
+        </article>
+      ) : null}
     </div>
   </section>
 );
@@ -214,6 +219,7 @@ const TrainingPlan = () => {
       profile,
       locale,
       difficultyOffset,
+      storageScope,
       controller.signal,
     )
       .then(({ plan, source }) => {
@@ -231,7 +237,7 @@ const TrainingPlan = () => {
       });
 
     return () => controller.abort();
-  }, [difficultyOffset, isScopeReady, locale, profile]);
+  }, [difficultyOffset, isScopeReady, locale, profile, storageScope]);
 
   useEffect(() => {
     if (
@@ -273,6 +279,7 @@ const TrainingPlan = () => {
         profile,
         locale,
         difficultyOffset,
+        storageScope,
       );
       setLivePlan(plan);
       setPlanSource(source);
@@ -879,6 +886,11 @@ const TrainingPlan = () => {
 
             <section className="phantom-plan-complete">
               <p className="phantom-plan-closing">{displayedPlan.closing}</p>
+              {displayedPlan.praise ? (
+                <div className="phantom-plan-praise" aria-label="AI coach praise">
+                  <p className="phantom-plan-praise-body">{displayedPlan.praise}</p>
+                </div>
+              ) : null}
               {todayCompletion ? (
                 <div className="phantom-plan-complete-done">
                   <CheckCircle2 className="h-5 w-5" aria-hidden />

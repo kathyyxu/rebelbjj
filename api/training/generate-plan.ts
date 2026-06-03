@@ -32,16 +32,25 @@ type ProfilePayload = {
   menstrualPhase?: string;
 };
 
+type CoachContextPayload = {
+  sessionsThisWeek: number;
+  totalLoggedSessions: number;
+  completedPlanSessions: number;
+  savedPlanCount: number;
+};
+
 type EnhanceRequest = {
   locale: string;
   difficultyOffset: number;
   profile: ProfilePayload;
   basePlan: BasePlanPayload;
+  coachContext?: CoachContextPayload;
 };
 
 type LlmEnhancement = {
   opening?: string;
   closing?: string;
+  praise?: string;
   personalization?: { title?: string; items?: string[] };
   warmup?: { note?: string };
   technique?: { note?: string };
@@ -50,6 +59,7 @@ type LlmEnhancement = {
 };
 
 const MAX_TEXT = 1200;
+const MAX_PRAISE = 700;
 const MAX_ITEMS = 8;
 
 const localeNames: Record<string, string> = {
@@ -94,6 +104,7 @@ const parseEnhancement = (raw: string): LlmEnhancement | null => {
     return {
       opening: trimText(parsed.opening),
       closing: trimText(parsed.closing),
+      praise: trimText(parsed.praise, MAX_PRAISE),
       personalization: personalization
         ? {
             title: trimText(personalization.title, 120),
@@ -129,12 +140,18 @@ const buildPrompt = (body: EnhanceRequest): string => {
     `Write ALL user-facing strings in ${language}.`,
     "The workout structure (sections, drill items, durations, intensity) is FIXED — do not change item lists or durations.",
     "Return ONLY valid JSON with this shape (omit keys you do not change):",
-    '{"opening":"...","closing":"...","personalization":{"title":"...","items":["..."]},"warmup":{"note":"..."},"technique":{"note":"..."},"conditioning":{"note":"..."},"cooldown":{"note":"..."}}',
+    '{"opening":"...","closing":"...","praise":"...","personalization":{"title":"...","items":["..."]},"warmup":{"note":"..."},"technique":{"note":"..."},"conditioning":{"note":"..."},"cooldown":{"note":"..."}}',
     "Tone: direct, warm, professional coach — not generic AI fluff. Reference athlete context naturally.",
-    "Keep the entire JSON under 900 characters. personalization.items: 2-3 bullets max 40 chars each.",
-    "opening/closing: max 2 sentences each. Section notes: max 1 short sentence.",
+    "praise (REQUIRED): one string with a title line then exactly 3 numbered strengths (1. 2. 3.) based on profile AND coachContext.",
+    "Example praise (zh-CN style): \"✨ 今天夸夸你的三个优点：\\n1. 本周已训练 3 次，坚持力很强\\n2. 白带阶段就开始认真记录，态度决定高度\\n3. 今天感觉疲惫还点开方案，已经战胜了昨天的自己\"",
+    "Use real numbers from coachContext when relevant (sessionsThisWeek, totalLoggedSessions, completedPlanSessions). Never invent training counts.",
+    "Keep the entire JSON under 1100 characters. personalization.items: 2-3 bullets max 40 chars each.",
+    "opening/closing: max 2 sentences each. Section notes: max 1 short sentence. praise: max 3 lines + title.",
     "",
     `Athlete profile JSON:\n${JSON.stringify(body.profile)}`,
+    body.coachContext
+      ? `Training activity context JSON:\n${JSON.stringify(body.coachContext)}`
+      : "Training activity context: not provided — praise from profile and plan only.",
     `Difficulty offset: ${body.difficultyOffset} (-2 easier … +2 harder)`,
     `Base plan JSON (structure locked):\n${JSON.stringify(body.basePlan)}`,
   ].join("\n");
