@@ -20,7 +20,7 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
       })}`,
     },
     {
-      to: "/training-plan",
+      to: "/profile?flow=ai-coach",
       matchPath: "/training-plan",
       label: `🤖 ${pick({
         "zh-CN": "AI教练方案",

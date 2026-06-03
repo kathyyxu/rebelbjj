@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Brain,
   CheckCircle2,
@@ -33,6 +33,7 @@ import {
 } from "@/lib/trainingPlanHistory";
 import {
   adjustDifficultyOffset,
+  generateTrainingPlan,
   PlanDifficultyOffset,
   TrainingPlanResult,
   TrainingPlanSection,
@@ -109,8 +110,15 @@ const TrainingPlanPdfSheet = ({ plan, exportTitle, identityLabel }: TrainingPlan
   </section>
 );
 
+type TrainingPlanLocationState = {
+  generatePlan?: boolean;
+};
+
 const TrainingPlan = () => {
   const { pick, locale } = useLocale();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { storageScope, hasEmailIdentity, hasWalletIdentity, currentIdentityLabel } = useIdentity();
   const [history, setHistory] = useState<TrainingPlanRecord[]>(() =>
     readTrainingPlanHistory(storageScope),
@@ -127,7 +135,9 @@ const TrainingPlan = () => {
   const exportRef = useRef<HTMLDivElement>(null);
   const seededTodayRef = useRef(false);
   const planGenerationRef = useRef(0);
-  const persistAfterDifficultyRef = useRef(false);
+  const planGenerationAbortRef = useRef<AbortController | null>(null);
+  const shouldPersistGeneratedPlanRef = useRef(false);
+  const generateIntentConsumedRef = useRef(false);
 
   const isLoggedIn = hasEmailIdentity || hasWalletIdentity;
 
@@ -196,15 +206,86 @@ const TrainingPlan = () => {
     [locale, profile, reloadHistory, storageScope],
   );
 
+  const buildRuleOnlyPlan = useCallback(() => {
+    if (!profile || !isProfileComplete(profile)) return null;
+    const base = generateTrainingPlan(profile, locale, difficultyOffset);
+    return ensurePlanHasPraise(
+      base,
+      profile,
+      locale,
+      buildTrainingPlanCoachContext(storageScope),
+    );
+  }, [difficultyOffset, locale, profile, storageScope]);
+
+  const runPlanGeneration = useCallback(
+    (options?: { persistAfter?: boolean }) => {
+      if (!profile || !isProfileComplete(profile)) return;
+
+      if (options?.persistAfter) {
+        shouldPersistGeneratedPlanRef.current = true;
+      }
+
+      planGenerationAbortRef.current?.abort();
+      const generationId = planGenerationRef.current + 1;
+      planGenerationRef.current = generationId;
+      const controller = new AbortController();
+      planGenerationAbortRef.current = controller;
+      setIsEnhancingPlan(true);
+
+      void generateTrainingPlanWithEnhancement(
+        profile,
+        locale,
+        difficultyOffset,
+        storageScope,
+        controller.signal,
+      )
+        .then(({ plan }) => {
+          if (planGenerationRef.current !== generationId) return;
+          setLivePlan(plan);
+        })
+        .catch((error) => {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          if (planGenerationRef.current !== generationId) return;
+          setLivePlan(buildRuleOnlyPlan());
+        })
+        .finally(() => {
+          if (planGenerationRef.current !== generationId) return;
+          setIsEnhancingPlan(false);
+        });
+    },
+    [buildRuleOnlyPlan, difficultyOffset, locale, profile, storageScope],
+  );
+
+  const consumeGenerateIntent = useCallback(() => {
+    const state = location.state as TrainingPlanLocationState | null;
+    const fromState = Boolean(state?.generatePlan);
+    const fromQuery = searchParams.get("generate") === "1";
+    if (!fromState && !fromQuery) return false;
+
+    if (fromQuery) {
+      setSearchParams({}, { replace: true });
+    }
+    if (fromState) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    return true;
+  }, [location.pathname, location.state, navigate, searchParams, setSearchParams]);
+
   useEffect(() => {
     setIsScopeReady(false);
     setHistory(readTrainingPlanHistory(storageScope));
     setDifficultyOffset(readDifficultyOffset(storageScope));
     setActiveRecordId(null);
     seededTodayRef.current = false;
+    shouldPersistGeneratedPlanRef.current = false;
+    generateIntentConsumedRef.current = false;
     setLivePlan(null);
     setIsScopeReady(true);
   }, [storageScope]);
+
+  useEffect(() => {
+    generateIntentConsumedRef.current = false;
+  }, [location.key]);
 
   useEffect(() => {
     if (!isScopeReady) return;
@@ -218,36 +299,41 @@ const TrainingPlan = () => {
       return;
     }
 
-    const generationId = planGenerationRef.current + 1;
-    planGenerationRef.current = generationId;
-    const controller = new AbortController();
-    setIsEnhancingPlan(true);
+    if (!generateIntentConsumedRef.current && consumeGenerateIntent()) {
+      generateIntentConsumedRef.current = true;
+      shouldPersistGeneratedPlanRef.current = true;
+      runPlanGeneration();
+      return;
+    }
 
-    void generateTrainingPlanWithEnhancement(
-      profile,
-      locale,
-      difficultyOffset,
-      storageScope,
-      controller.signal,
-    )
-      .then(({ plan }) => {
-        if (planGenerationRef.current !== generationId) return;
-        setLivePlan(plan);
-      })
-      .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        if (planGenerationRef.current !== generationId) return;
-      })
-      .finally(() => {
-        if (planGenerationRef.current !== generationId) return;
-        setIsEnhancingPlan(false);
-      });
+    const todayRecord = getTodayPlanRecord(storageScope);
+    if (
+      todayRecord &&
+      planRecordMatchesSession(todayRecord, profile, difficultyOffset) &&
+      !activeRecordId
+    ) {
+      setLivePlan(todayRecord.plan);
+      setIsEnhancingPlan(false);
+      return;
+    }
 
-    return () => controller.abort();
-  }, [difficultyOffset, isScopeReady, locale, profile, storageScope]);
+    setLivePlan(buildRuleOnlyPlan());
+    setIsEnhancingPlan(false);
+  }, [
+    activeRecordId,
+    buildRuleOnlyPlan,
+    consumeGenerateIntent,
+    isScopeReady,
+    locale,
+    location.key,
+    profile,
+    runPlanGeneration,
+    storageScope,
+  ]);
 
   useEffect(() => {
     if (
+      !shouldPersistGeneratedPlanRef.current ||
       !isScopeReady ||
       !profile ||
       !isProfileComplete(profile) ||
@@ -258,51 +344,50 @@ const TrainingPlan = () => {
     }
     if (seededTodayRef.current || activeRecordId) return;
     seededTodayRef.current = true;
+    shouldPersistGeneratedPlanRef.current = false;
 
     if (!hasPlanRecordForToday(storageScope)) {
       persistPlan(livePlan);
     }
   }, [activeRecordId, isEnhancingPlan, isScopeReady, livePlan, persistPlan, profile, storageScope]);
 
+  useEffect(
+    () => () => {
+      planGenerationAbortRef.current?.abort();
+    },
+    [],
+  );
+
+  const handleRegenerate = () => {
+    if (!profile || !isProfileComplete(profile) || isEnhancingPlan) return;
+    shouldPersistGeneratedPlanRef.current = true;
+    setActiveRecordId(null);
+    runPlanGeneration({ persistAfter: true });
+    toast.success(
+      pick({
+        "zh-CN": "正在根据当前资料重新生成…",
+        "zh-TW": "正在根據當前資料重新生成…",
+        en: "Regenerating from your profile…",
+        ja: "プロフィールから再生成中…",
+      }),
+    );
+  };
+
   useEffect(() => {
     if (
-      !persistAfterDifficultyRef.current ||
+      !shouldPersistGeneratedPlanRef.current ||
       isEnhancingPlan ||
       !livePlan ||
       !profile ||
-      !isProfileComplete(profile)
+      !isProfileComplete(profile) ||
+      activeRecordId
     ) {
       return;
     }
-    persistAfterDifficultyRef.current = false;
-    persistPlan(livePlan);
-  }, [isEnhancingPlan, livePlan, persistPlan, profile]);
-
-  const handleRegenerate = async () => {
-    if (!profile || !isProfileComplete(profile) || isEnhancingPlan) return;
-    setIsEnhancingPlan(true);
-    try {
-      const { plan } = await generateTrainingPlanWithEnhancement(
-        profile,
-        locale,
-        difficultyOffset,
-        storageScope,
-      );
-      setLivePlan(plan);
-      const record = persistPlan(plan);
-      if (record) setActiveRecordId(record.id);
-      toast.success(
-        pick({
-          "zh-CN": "已根据当前资料重新生成并存档。",
-          "zh-TW": "已根據當前資料重新生成並存檔。",
-          en: "Regenerated from your profile and saved.",
-          ja: "プロフィールから再生成し保存しました。",
-        }),
-      );
-    } finally {
-      setIsEnhancingPlan(false);
-    }
-  };
+    const record = persistPlan(livePlan);
+    if (record) setActiveRecordId(record.id);
+    shouldPersistGeneratedPlanRef.current = false;
+  }, [activeRecordId, isEnhancingPlan, livePlan, persistPlan, profile]);
 
   const handleDifficultyChange = (direction: "easier" | "harder") => {
     const next = adjustDifficultyOffset(difficultyOffset, direction);
@@ -320,7 +405,8 @@ const TrainingPlan = () => {
 
     setDifficultyOffset(next);
     setActiveRecordId(null);
-    persistAfterDifficultyRef.current = true;
+    shouldPersistGeneratedPlanRef.current = true;
+    runPlanGeneration({ persistAfter: true });
 
     toast.success(
       pick({
@@ -613,7 +699,7 @@ const TrainingPlan = () => {
               })}
             </p>
             <Link
-              to="/profile?returnTo=/training-plan"
+              to="/profile?flow=ai-coach&returnTo=/training-plan"
               className="atlas-home-cta phantom-diary-action phantom-plan-complete-btn"
             >
               <Brain className="h-4 w-4" />
@@ -779,7 +865,7 @@ const TrainingPlan = () => {
               </button>
               <div className="phantom-plan-edit-profile-wrap">
                 <Link
-                  to="/profile?returnTo=/training-plan"
+                  to="/profile?flow=ai-coach&returnTo=/training-plan"
                   className="atlas-home-cta phantom-diary-action phantom-diary-action-dark"
                 >
                   <Brain className="h-4 w-4" />

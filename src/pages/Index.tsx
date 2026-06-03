@@ -77,13 +77,13 @@ const Index = () => {
         ja: "AIコーチ・トレーニングプラン",
       }),
       english: "AI COACH SESSION PLAN",
-      to: "/training-plan",
+      to: "/profile?flow=ai-coach",
       icon: Brain,
       note: pick({
-        "zh-CN": "登录并填写资料后，一键生成专属你的训练方案",
-        "zh-TW": "登入並填寫資料後，一鍵生成專屬你的訓練方案",
-        en: "Sign in, set your profile, and get a session plan built for you.",
-        ja: "ログインとプロフィール入力後、専用プランをワンタップ生成。",
+        "zh-CN": "登录后先填写资料，再点击生成专属训练方案",
+        "zh-TW": "登入後先填寫資料，再點擊生成專屬訓練方案",
+        en: "Sign in, complete your profile, then generate your session plan.",
+        ja: "ログイン後プロフィールを入力し、専用プランを生成。",
       }),
     },
     {

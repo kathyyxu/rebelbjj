@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Save, UserRound } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Brain, Save } from "lucide-react";
 import { AtlasFeatureTabs } from "@/components/AtlasFeatureTabs";
 import { useIdentity } from "@/lib/identity";
 import { useLocale } from "@/lib/locale";
@@ -33,6 +33,8 @@ const Profile = () => {
   const [isScopeReady, setIsScopeReady] = useState(true);
 
   const returnTo = searchParams.get("returnTo") === "/training-plan" ? "/training-plan" : null;
+  const isAiCoachFlow =
+    searchParams.get("flow") === "ai-coach" || returnTo === "/training-plan";
   const isLoggedIn = hasEmailIdentity || hasWalletIdentity;
 
   useEffect(() => {
@@ -129,8 +131,7 @@ const Profile = () => {
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const saveProfileFromDraft = () => {
     const profile = draftToProfile(draft);
     if (!profile) {
       toast.error(
@@ -141,10 +142,10 @@ const Profile = () => {
           ja: "必須項目を入力し、数値が範囲内か確認してください。",
         }),
       );
-      return;
+      return null;
     }
 
-    if (!isScopeReady) return;
+    if (!isScopeReady) return null;
     saveUserProfile(profile, storageScope);
     toast.success(
       pick({
@@ -154,10 +155,18 @@ const Profile = () => {
         ja: "プロフィールを保存しました。",
       }),
     );
+    return profile;
+  };
 
-    if (returnTo) {
-      navigate(returnTo);
-    }
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    saveProfileFromDraft();
+  };
+
+  const handleGenerateTrainingPlan = () => {
+    const profile = saveProfileFromDraft();
+    if (!profile) return;
+    navigate("/training-plan", { state: { generatePlan: true } });
   };
 
   if (!isLoggedIn) {
@@ -221,13 +230,13 @@ const Profile = () => {
                 ja: "AIコーチ・トレーニングプラン用の身体・目標情報。この端末のみに保存。",
               })}
             </p>
-            {returnTo ? (
+            {isAiCoachFlow ? (
               <p className="phantom-diary-meta-line">
                 {pick({
-                  "zh-CN": "保存后将返回训练方案页。",
-                  "zh-TW": "儲存後將返回訓練方案頁。",
-                  en: "You will return to the training plan after saving.",
-                  ja: "保存後、トレーニングプランへ戻ります。",
+                  "zh-CN": "先保存资料；准备好后点击「生成专属训练方案」才会生成今日方案。",
+                  "zh-TW": "先儲存資料；準備好後點擊「生成專屬訓練方案」才會生成今日方案。",
+                  en: "Save your profile first. Tap “Generate my plan” when you’re ready to build today’s session.",
+                  ja: "まず保存。「専用プランを生成」で今日のメニューを作成します。",
                 })}
               </p>
             ) : null}
@@ -444,17 +453,23 @@ const Profile = () => {
                 <Save className="h-4 w-4" />
                 <span>{pick({ "zh-CN": "保存资料", "zh-TW": "儲存資料", en: "Save Profile", ja: "保存" })}</span>
               </button>
-              <Link to="/training-plan" className="atlas-home-cta phantom-diary-action phantom-diary-action-dark">
-                <UserRound className="h-4 w-4" />
-                <span>
-                  {pick({
-                    "zh-CN": "查看训练方案",
-                    "zh-TW": "查看訓練方案",
-                    en: "View Training Plan",
-                    ja: "プランを見る",
-                  })}
-                </span>
-              </Link>
+              {isAiCoachFlow ? (
+                <button
+                  type="button"
+                  className="atlas-home-cta phantom-diary-action phantom-diary-action-dark"
+                  onClick={handleGenerateTrainingPlan}
+                >
+                  <Brain className="h-4 w-4" />
+                  <span>
+                    {pick({
+                      "zh-CN": "生成专属训练方案",
+                      "zh-TW": "生成專屬訓練方案",
+                      en: "Generate My Training Plan",
+                      ja: "専用プランを生成",
+                    })}
+                  </span>
+                </button>
+              ) : null}
             </div>
           </form>
         </section>
