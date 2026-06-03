@@ -2108,6 +2108,21 @@
     gap: 0.8rem;
   }
 
+  .phantom-plan-edit-profile-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+  }
+
+  .phantom-plan-profile-hint {
+    margin: 0;
+    max-width: 14rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: rgba(247, 216, 78, 0.88);
+  }
+
   .phantom-diary-action {
     display: inline-flex;
     align-items: center;
@@ -2137,6 +2152,238 @@
     display: grid;
     gap: 1.2rem;
     align-items: start;
+  }
+
+  .phantom-plan-grid {
+    margin-top: 1.2rem;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phantom-plan-section {
+    padding: 1rem;
+  }
+
+  .phantom-plan-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .phantom-plan-duration {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #ff294b;
+  }
+
+  .phantom-plan-list {
+    display: grid;
+    gap: 0.55rem;
+    padding-left: 1.1rem;
+    line-height: 1.65;
+  }
+
+  .phantom-plan-note {
+    margin-top: 0.75rem;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .phantom-plan-personalization {
+    padding: 1rem;
+    border: 2px solid rgba(247, 216, 78, 0.35);
+    background: linear-gradient(145deg, rgba(247, 216, 78, 0.08), rgba(8, 8, 8, 0.92));
+  }
+
+  .phantom-plan-opening {
+    margin-bottom: 0.35rem;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .phantom-plan-summary-line {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  .phantom-plan-coach-notes {
+    display: grid;
+    gap: 0.65rem;
+    line-height: 1.7;
+  }
+
+  .phantom-plan-coach-notes p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .phantom-plan-complete {
+    margin: 0 0 1rem;
+    padding: 1rem;
+    border-left: 3px solid rgba(247, 216, 78, 0.55);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .phantom-plan-closing {
+    margin: 0 0 0.85rem;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .phantom-plan-complete-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .phantom-plan-complete-done {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    color: rgba(120, 220, 160, 0.95);
+  }
+
+  .phantom-plan-complete-copy p {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .phantom-plan-complete-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+
+  .phantom-plan-complete-link {
+    font-size: 0.88rem;
+    color: rgba(247, 216, 78, 0.95);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .phantom-plan-complete-sync {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .phantom-plan-complete-sync:hover:not(:disabled) {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .phantom-plan-complete-sync:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .phantom-plan-complete-hint {
+    margin: 0.65rem 0 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .phantom-plan-difficulty {
+    padding: 1rem;
+  }
+
+  .phantom-plan-difficulty-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .phantom-plan-difficulty-btn {
+    flex: 1 1 220px;
+    justify-content: center;
+  }
+
+  .phantom-plan-difficulty-hint {
+    margin: 0.75rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .phantom-plan-reminders {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+
+  .phantom-plan-main {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+
+  .phantom-history-card {
+    position: relative;
+  }
+
+  .phantom-history-card-body {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .phantom-plan-history-delete {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.72);
+    cursor: pointer;
+  }
+
+  .phantom-plan-history-delete:hover {
+    color: #ff294b;
+    border-color: rgba(255, 41, 75, 0.45);
+  }
+
+  /* Off-screen root for html2pdf capture (Training Log uses visible sidebar sheet; plan uses hidden host). */
+  .phantom-pdf-capture-host {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 794px;
+    max-width: 794px;
+    overflow: visible;
+    pointer-events: none;
+    opacity: 1;
+    z-index: -1;
+  }
+
+  .phantom-pdf-capture-host .phantom-export-sheet {
+    width: 100%;
+    padding: 1rem;
   }
 
   .phantom-diary-sidebar,
@@ -4319,6 +4566,7 @@
   .atlas-home-grid,
   .atlas-home-rules,
   .phantom-diary-layout,
+  .phantom-plan-grid,
   .phantom-field-grid-two,
   .phantom-field-grid-three,
   .phantom-diary-stat-grid {

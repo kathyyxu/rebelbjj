@@ -49,6 +49,16 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
         ja: "マイルストーン",
       })}`,
     },
+    {
+      to: "/training-plan",
+      matchPath: "/training-plan",
+      label: `🤖 ${pick({
+        "zh-CN": "AI教练训练方案",
+        "zh-TW": "AI教練訓練方案",
+        en: "AI Coach Plan",
+        ja: "AIコーチプラン",
+      })}`,
+    },
   ];
 
   return (
@@ -100,6 +110,17 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
               "zh-TW": "熱身區",
               en: "Warm-Up",
               ja: "ウォームアップ",
+            })}
+          </span>
+        </Link>
+        <Link to="/profile" className="atlas-subnav-link phantom-support-link">
+          <span>
+            👤{" "}
+            {pick({
+              "zh-CN": "个人资料",
+              "zh-TW": "個人資料",
+              en: "Profile",
+              ja: "プロフィール",
             })}
           </span>
         </Link>

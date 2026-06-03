@@ -13,6 +13,8 @@ import Atlas from "./pages/Atlas.tsx";
 import Drills from "./pages/Drills.tsx";
 import TrainingLog from "./pages/TrainingLog.tsx";
 import TrainingMilestones from "./pages/TrainingMilestones.tsx";
+import Profile from "./pages/Profile.tsx";
+import TrainingPlan from "./pages/TrainingPlan.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
                 <Route path="/drills" element={<Drills />} />
                 <Route path="/training-log" element={<TrainingLog />} />
                 <Route path="/training-milestones" element={<TrainingMilestones />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/training-plan" element={<TrainingPlan />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

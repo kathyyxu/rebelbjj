@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
+  Brain,
   Flame,
   Medal,
   NotebookPen,
@@ -100,6 +101,23 @@ const Index = () => {
         "zh-TW": "第一次參賽、第一次拿名次、第一次奪冠和升帶都在這裡領取證明",
         en: "Claim proofs for your first competition, first placement, first championship, and belt promotion.",
         ja: "初出場、初入賞、初優勝、昇帯の節目をここで証明化。",
+      }),
+    },
+    {
+      title: pick({
+        "zh-CN": "AI教练训练方案",
+        "zh-TW": "AI教練訓練方案",
+        en: "AI Coach Training Plan",
+        ja: "AIコーチ・トレーニングプラン",
+      }),
+      english: "AI COACH SESSION PLAN",
+      to: "/training-plan",
+      icon: Brain,
+      note: pick({
+        "zh-CN": "根据你的资料生成单次热身、技术、体能与拉伸方案",
+        "zh-TW": "根據你的資料生成單次熱身、技術、體能與拉伸方案",
+        en: "Personalized warm-up, technique, conditioning, and cool-down for one session.",
+        ja: "プロフィールに基づく1回分のプラン（ルールエンジン）。",
       }),
     },
     {
