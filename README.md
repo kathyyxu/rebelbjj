@@ -79,14 +79,13 @@ npm run dev
 
 本地 `npm run dev` 仅提供前端；LLM 润色需部署到 Vercel 或使用 `npx vercel dev`。
 
-## 生产部署
 
-始终部署到 Vercel 项目 **`phantom-thief-s-mat-main`**（不要用单独的 `rebelbjj` 别名）。
+```markdown
+## 📦 线上地址
 
-```bash
-npx vercel link --project phantom-thief-s-mat-main --yes
-npx vercel deploy --prod --yes
-```
+[https://phantom-thief-s-mat-main.vercel.app](https://phantom-thief-s-mat-main.vercel.app)
+
+推送 `main` 分支到 GitHub 会自动触发 Vercel 部署。
 
 ### Vercel 环境变量（AI 教练）
 
