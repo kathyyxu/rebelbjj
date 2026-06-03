@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Brain,
   CheckCircle2,
@@ -430,22 +430,125 @@ const TrainingPlan = () => {
               </h1>
               <p className="atlas-description">
                 {pick({
-                  "zh-CN": "请先登录：点击页面右上角邮箱图标或钱包图标完成身份连接。",
-                  "zh-TW": "請先登入：點擊頁面右上角信箱圖示或錢包圖示完成身份連接。",
-                  en: "Sign in first — use the email or wallet icon in the top-right corner.",
-                  ja: "先にログイン——右上のメールまたはウォレットアイコンから接続してください。",
+                  "zh-CN": "生成专属训练方案前，请先完成登录。",
+                  "zh-TW": "生成專屬訓練方案前，請先完成登入。",
+                  en: "Sign in before we can build your session plan.",
+                  ja: "専用プランを作るには、先にログインしてください。",
                 })}
               </p>
             </div>
           </header>
+
           <AtlasFeatureTabs />
+
+          <section className="atlas-panel atlas-knowledge phantom-plan-login-gate">
+            <div className="atlas-section-head">
+              <p className="atlas-section-tag">SIGN IN</p>
+              <h2 className="atlas-section-title">
+                {pick({
+                  "zh-CN": "请先登录",
+                  "zh-TW": "請先登入",
+                  en: "Sign in first",
+                  ja: "先にログイン",
+                })}
+              </h2>
+            </div>
+            <p className="phantom-plan-login-gate-lead">
+              {pick({
+                "zh-CN": "点击页面右上角的邮箱图标或钱包图标，用邮箱或钱包完成登录。",
+                "zh-TW": "點擊頁面右上角的信箱圖示或錢包圖示，用信箱或錢包完成登入。",
+                en: "Use the email or wallet icon in the top-right corner to sign in.",
+                ja: "右上のメールまたはウォレットアイコンからログインしてください。",
+              })}
+            </p>
+            <p className="phantom-plan-login-gate-hint">
+              {pick({
+                "zh-CN": "登录邮箱或者钱包后，可以一键生成专属于你的训练方案。",
+                "zh-TW": "登入信箱或者錢包後，可以一鍵生成專屬於你的訓練方案。",
+                en: "Once you’re signed in, one tap generates a training plan built just for you.",
+                ja: "ログイン後、ワンタップであなた専用のトレーニングプランを生成できます。",
+              })}
+            </p>
+          </section>
         </div>
       </main>
     );
   }
 
   if (!isProfileComplete(profile) || !displayedPlan) {
-    return <Navigate to="/profile?returnTo=/training-plan" replace />;
+    return (
+      <main className="atlas-app">
+        <div className="atlas-shell">
+          <header className="atlas-hero atlas-panel">
+            <div className="atlas-hero-copy">
+              <div className="atlas-chip">AI COACH / PROFILE</div>
+              <h1 className="atlas-title persona-page-title">
+                {pick({
+                  "zh-CN": "AI教练",
+                  "zh-TW": "AI教練",
+                  en: "AI COACH",
+                  ja: "AIコーチ",
+                })}
+                <span>
+                  {pick({
+                    "zh-CN": "训练方案",
+                    "zh-TW": "訓練方案",
+                    en: " TRAINING PLAN",
+                    ja: "トレーニングプラン",
+                  })}
+                </span>
+              </h1>
+              <p className="atlas-description">
+                {pick({
+                  "zh-CN": "你已登录。再填一次个人资料，就能一键生成今天的专属方案。",
+                  "zh-TW": "你已登入。再填一次個人資料，就能一鍵生成今天的專屬方案。",
+                  en: "You’re signed in. Complete your profile to generate today’s plan.",
+                  ja: "ログイン済みです。プロフィールを入力するとプランを生成できます。",
+                })}
+              </p>
+            </div>
+          </header>
+
+          <AtlasFeatureTabs />
+
+          <section className="atlas-panel atlas-knowledge phantom-plan-login-gate">
+            <div className="atlas-section-head">
+              <p className="atlas-section-tag">PROFILE</p>
+              <h2 className="atlas-section-title">
+                {pick({
+                  "zh-CN": "先完善个人资料",
+                  "zh-TW": "先完善個人資料",
+                  en: "Complete your profile",
+                  ja: "プロフィールを入力",
+                })}
+              </h2>
+            </div>
+            <p className="phantom-plan-login-gate-lead">
+              {pick({
+                "zh-CN": "带色、目标、今日感受和（如适用）生理周期填好后，系统才能为你生成 AI 教练训练方案。",
+                "zh-TW": "帶色、目標、今日感受和（如適用）生理週期填好後，系統才能為你生成 AI 教練訓練方案。",
+                en: "Belt, goals, how you feel today, and cycle phase (if relevant) power your AI coach plan.",
+                ja: "帯・目標・今日のコンディションなどを入力してからプランを生成します。",
+              })}
+            </p>
+            <Link
+              to="/profile?returnTo=/training-plan"
+              className="atlas-home-cta phantom-diary-action phantom-plan-complete-btn"
+            >
+              <Brain className="h-4 w-4" />
+              <span>
+                {pick({
+                  "zh-CN": "去填写个人资料",
+                  "zh-TW": "去填寫個人資料",
+                  en: "Fill in profile",
+                  ja: "プロフィールへ",
+                })}
+              </span>
+            </Link>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   const exportTitle = activeRecord

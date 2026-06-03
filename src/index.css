@@ -1948,6 +1948,20 @@
     gap: 0.7rem;
   }
 
+  .phantom-tab-nav-hint {
+    width: 100%;
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  @media (min-width: 960px) {
+    .phantom-tab-nav-hint {
+      display: none;
+    }
+  }
+
   .phantom-tab-link,
   .phantom-support-link {
     min-height: 3rem;
@@ -2121,6 +2135,29 @@
     font-size: 0.82rem;
     line-height: 1.45;
     color: rgba(247, 216, 78, 0.88);
+  }
+
+  .phantom-plan-login-gate {
+    padding: 1.1rem 1.15rem;
+    border: 2px solid rgba(247, 216, 78, 0.35);
+    background: linear-gradient(145deg, rgba(247, 216, 78, 0.08), rgba(8, 8, 8, 0.92));
+  }
+
+  .phantom-plan-login-gate-lead {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .phantom-plan-login-gate-hint {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    border-left: 3px solid rgba(247, 216, 78, 0.55);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(247, 216, 78, 0.95);
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .phantom-diary-action {
@@ -4620,6 +4657,19 @@
   .phantom-tab-link,
   .phantom-support-link {
     min-height: auto;
+  }
+
+  .phantom-tab-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.35rem;
+    scrollbar-width: thin;
+  }
+
+  .phantom-tab-nav .phantom-tab-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .phantom-heatmap-cell,

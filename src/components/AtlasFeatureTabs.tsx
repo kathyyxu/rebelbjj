@@ -20,6 +20,16 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
       })}`,
     },
     {
+      to: "/training-plan",
+      matchPath: "/training-plan",
+      label: `🤖 ${pick({
+        "zh-CN": "AI教练方案",
+        "zh-TW": "AI教練方案",
+        en: "AI Coach",
+        ja: "AIコーチ",
+      })}`,
+    },
+    {
       to: "/atlas",
       matchPath: "/atlas",
       label: `🥋 ${pick({
@@ -47,16 +57,6 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
         "zh-TW": "訓練里程碑",
         en: "Milestones",
         ja: "マイルストーン",
-      })}`,
-    },
-    {
-      to: "/training-plan",
-      matchPath: "/training-plan",
-      label: `🤖 ${pick({
-        "zh-CN": "AI教练训练方案",
-        "zh-TW": "AI教練訓練方案",
-        en: "AI Coach Plan",
-        ja: "AIコーチプラン",
       })}`,
     },
   ];
@@ -89,6 +89,14 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
           );
         })}
       </nav>
+      <p className="phantom-tab-nav-hint">
+        {pick({
+          "zh-CN": "标签较多时可左右滑动，第二个即为 AI 教练方案",
+          "zh-TW": "標籤較多時可左右滑動，第二個即為 AI 教練方案",
+          en: "Swipe the tabs sideways — AI Coach is the second tab.",
+          ja: "タブは横スクロール。2番目がAIコーチです。",
+        })}
+      </p>
 
       <div className="phantom-tab-support">
         <Link to="/" className="atlas-subnav-link phantom-support-link">
@@ -110,6 +118,17 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
               "zh-TW": "熱身區",
               en: "Warm-Up",
               ja: "ウォームアップ",
+            })}
+          </span>
+        </Link>
+        <Link to="/training-plan" className="atlas-subnav-link phantom-support-link">
+          <span>
+            🤖{" "}
+            {pick({
+              "zh-CN": "AI教练方案",
+              "zh-TW": "AI教練方案",
+              en: "AI Coach",
+              ja: "AIコーチ",
             })}
           </span>
         </Link>
