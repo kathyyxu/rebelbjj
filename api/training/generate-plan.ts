@@ -131,7 +131,8 @@ const buildPrompt = (body: EnhanceRequest): string => {
     "Return ONLY valid JSON with this shape (omit keys you do not change):",
     '{"opening":"...","closing":"...","personalization":{"title":"...","items":["..."]},"warmup":{"note":"..."},"technique":{"note":"..."},"conditioning":{"note":"..."},"cooldown":{"note":"..."}}',
     "Tone: direct, warm, professional coach — not generic AI fluff. Reference athlete context naturally.",
-    "personalization.items: 2-4 short bullets. Section notes: optional 1-2 sentences max.",
+    "Keep the entire JSON under 900 characters. personalization.items: 2-3 bullets max 40 chars each.",
+    "opening/closing: max 2 sentences each. Section notes: max 1 short sentence.",
     "",
     `Athlete profile JSON:\n${JSON.stringify(body.profile)}`,
     `Difficulty offset: ${body.difficultyOffset} (-2 easier … +2 harder)`,
@@ -178,8 +179,9 @@ const callGemini = async (apiKey: string, prompt: string): Promise<string> => {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.65,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 },
       },
     }),
   });
