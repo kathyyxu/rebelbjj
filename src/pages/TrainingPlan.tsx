@@ -33,11 +33,14 @@ import {
 } from "@/lib/trainingPlanHistory";
 import {
   adjustDifficultyOffset,
-  generateTrainingPlan,
   PlanDifficultyOffset,
   TrainingPlanResult,
   TrainingPlanSection,
 } from "@/lib/trainingPlanEngine";
+import {
+  generateTrainingPlanWithEnhancement,
+  TrainingPlanSource,
+} from "@/lib/trainingPlanLlm";
 import { AgeRange, isProfileComplete, readUserProfile } from "@/lib/userProfile";
 
 const PlanSectionCard = ({ section }: { section: TrainingPlanSection }) => (
@@ -113,22 +116,19 @@ const TrainingPlan = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isScopeReady, setIsScopeReady] = useState(true);
+  const [livePlan, setLivePlan] = useState<TrainingPlanResult | null>(null);
+  const [planSource, setPlanSource] = useState<TrainingPlanSource>("rules");
+  const [isEnhancingPlan, setIsEnhancingPlan] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const seededTodayRef = useRef(false);
+  const planGenerationRef = useRef(0);
+  const persistAfterDifficultyRef = useRef(false);
 
   const isLoggedIn = hasEmailIdentity || hasWalletIdentity;
 
   const profile = useMemo(
     () => readUserProfile(storageScope),
     [storageScope, isScopeReady],
-  );
-
-  const livePlan = useMemo(
-    () =>
-      profile && isProfileComplete(profile)
-        ? generateTrainingPlan(profile, locale, difficultyOffset)
-        : null,
-    [profile, locale, difficultyOffset],
   );
 
   const activeRecord = activeRecordId
@@ -187,6 +187,8 @@ const TrainingPlan = () => {
     setDifficultyOffset(readDifficultyOffset(storageScope));
     setActiveRecordId(null);
     seededTodayRef.current = false;
+    setLivePlan(null);
+    setPlanSource("rules");
     setIsScopeReady(true);
   }, [storageScope]);
 
@@ -196,27 +198,97 @@ const TrainingPlan = () => {
   }, [difficultyOffset, isScopeReady, storageScope]);
 
   useEffect(() => {
-    if (!isScopeReady || !profile || !isProfileComplete(profile) || !livePlan) return;
+    if (!isScopeReady || !profile || !isProfileComplete(profile)) {
+      setLivePlan(null);
+      setPlanSource("rules");
+      setIsEnhancingPlan(false);
+      return;
+    }
+
+    const generationId = planGenerationRef.current + 1;
+    planGenerationRef.current = generationId;
+    const controller = new AbortController();
+    setIsEnhancingPlan(true);
+
+    void generateTrainingPlanWithEnhancement(
+      profile,
+      locale,
+      difficultyOffset,
+      controller.signal,
+    )
+      .then(({ plan, source }) => {
+        if (planGenerationRef.current !== generationId) return;
+        setLivePlan(plan);
+        setPlanSource(source);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (planGenerationRef.current !== generationId) return;
+      })
+      .finally(() => {
+        if (planGenerationRef.current !== generationId) return;
+        setIsEnhancingPlan(false);
+      });
+
+    return () => controller.abort();
+  }, [difficultyOffset, isScopeReady, locale, profile]);
+
+  useEffect(() => {
+    if (
+      !isScopeReady ||
+      !profile ||
+      !isProfileComplete(profile) ||
+      !livePlan ||
+      isEnhancingPlan
+    ) {
+      return;
+    }
     if (seededTodayRef.current || activeRecordId) return;
     seededTodayRef.current = true;
 
     if (!hasPlanRecordForToday(storageScope)) {
       persistPlan(livePlan);
     }
-  }, [activeRecordId, isScopeReady, livePlan, persistPlan, profile, storageScope]);
+  }, [activeRecordId, isEnhancingPlan, isScopeReady, livePlan, persistPlan, profile, storageScope]);
 
-  const handleRegenerate = () => {
-    if (!livePlan) return;
-    const record = persistPlan(livePlan);
-    if (record) setActiveRecordId(record.id);
-    toast.success(
-      pick({
-        "zh-CN": "已根据当前资料重新生成并存档。",
-        "zh-TW": "已根據當前資料重新生成並存檔。",
-        en: "Regenerated from your profile and saved.",
-        ja: "プロフィールから再生成し保存しました。",
-      }),
-    );
+  useEffect(() => {
+    if (
+      !persistAfterDifficultyRef.current ||
+      isEnhancingPlan ||
+      !livePlan ||
+      !profile ||
+      !isProfileComplete(profile)
+    ) {
+      return;
+    }
+    persistAfterDifficultyRef.current = false;
+    persistPlan(livePlan);
+  }, [isEnhancingPlan, livePlan, persistPlan, profile]);
+
+  const handleRegenerate = async () => {
+    if (!profile || !isProfileComplete(profile) || isEnhancingPlan) return;
+    setIsEnhancingPlan(true);
+    try {
+      const { plan, source } = await generateTrainingPlanWithEnhancement(
+        profile,
+        locale,
+        difficultyOffset,
+      );
+      setLivePlan(plan);
+      setPlanSource(source);
+      const record = persistPlan(plan);
+      if (record) setActiveRecordId(record.id);
+      toast.success(
+        pick({
+          "zh-CN": "已根据当前资料重新生成并存档。",
+          "zh-TW": "已根據當前資料重新生成並存檔。",
+          en: "Regenerated from your profile and saved.",
+          ja: "プロフィールから再生成し保存しました。",
+        }),
+      );
+    } finally {
+      setIsEnhancingPlan(false);
+    }
   };
 
   const handleDifficultyChange = (direction: "easier" | "harder") => {
@@ -235,11 +307,7 @@ const TrainingPlan = () => {
 
     setDifficultyOffset(next);
     setActiveRecordId(null);
-
-    if (profile && isProfileComplete(profile)) {
-      const plan = generateTrainingPlan(profile, locale, next);
-      persistPlan(plan);
-    }
+    persistAfterDifficultyRef.current = true;
 
     toast.success(
       pick({
@@ -475,7 +543,7 @@ const TrainingPlan = () => {
     );
   }
 
-  if (!isProfileComplete(profile) || !displayedPlan) {
+  if (!isProfileComplete(profile)) {
     return (
       <main className="atlas-app">
         <div className="atlas-shell">
@@ -551,6 +619,52 @@ const TrainingPlan = () => {
     );
   }
 
+  if (!displayedPlan) {
+    return (
+      <main className="atlas-app">
+        <div className="atlas-shell">
+          <header className="atlas-hero atlas-panel">
+            <div className="atlas-hero-copy">
+              <div className="atlas-chip">
+                {pick({
+                  "zh-CN": "正在生成方案…",
+                  "zh-TW": "正在生成方案…",
+                  en: "BUILDING YOUR PLAN…",
+                  ja: "プラン生成中…",
+                })}
+              </div>
+              <h1 className="atlas-title persona-page-title">
+                {pick({
+                  "zh-CN": "AI教练",
+                  "zh-TW": "AI教練",
+                  en: "AI COACH",
+                  ja: "AIコーチ",
+                })}
+                <span>
+                  {pick({
+                    "zh-CN": "训练方案",
+                    "zh-TW": "訓練方案",
+                    en: " TRAINING PLAN",
+                    ja: "トレーニングプラン",
+                  })}
+                </span>
+              </h1>
+              <p className="atlas-description">
+                {pick({
+                  "zh-CN": "规则引擎先搭好训练骨架，AI 教练正在润色讲解…",
+                  "zh-TW": "規則引擎先搭好訓練骨架，AI 教練正在潤色講解…",
+                  en: "Rules build the session skeleton; the AI coach is polishing your briefing…",
+                  ja: "ルールで骨格を組み、AIコーチが文案を整えています…",
+                })}
+              </p>
+            </div>
+          </header>
+          <AtlasFeatureTabs />
+        </div>
+      </main>
+    );
+  }
+
   const exportTitle = activeRecord
     ? format(new Date(activeRecord.createdAt), "yyyy-MM-dd HH:mm")
     : format(new Date(), "yyyy-MM-dd HH:mm");
@@ -577,7 +691,35 @@ const TrainingPlan = () => {
       <div className="atlas-shell">
         <header className="atlas-hero atlas-panel">
           <div className="atlas-hero-copy">
-            <div className="atlas-chip">AI COACH / RULE ENGINE</div>
+            <div className="atlas-chip">
+              {activeRecord
+                ? pick({
+                    "zh-CN": "历史方案",
+                    "zh-TW": "歷史方案",
+                    en: "SAVED PLAN",
+                    ja: "保存プラン",
+                  })
+                : isEnhancingPlan
+                  ? pick({
+                      "zh-CN": "AI 教练撰写中…",
+                      "zh-TW": "AI 教練撰寫中…",
+                      en: "AI COACH WRITING…",
+                      ja: "AIコーチ生成中…",
+                    })
+                  : planSource === "llm"
+                    ? pick({
+                        "zh-CN": "AI 教练 · 规则骨架",
+                        "zh-TW": "AI 教練 · 規則骨架",
+                        en: "AI COACH · RULE SKELETON",
+                        ja: "AIコーチ・ルール骨格",
+                      })
+                    : pick({
+                        "zh-CN": "规则引擎（API 未启用或失败）",
+                        "zh-TW": "規則引擎（API 未啟用或失敗）",
+                        en: "RULE ENGINE (API OFFLINE)",
+                        ja: "ルールエンジン（API未使用）",
+                      })}
+            </div>
             <h1 className="atlas-title persona-page-title">
               {pick({
                 "zh-CN": "AI教练",
@@ -610,9 +752,10 @@ const TrainingPlan = () => {
               <button
                 type="button"
                 className="atlas-home-cta phantom-diary-action"
-                onClick={handleRegenerate}
+                onClick={() => void handleRegenerate()}
+                disabled={isEnhancingPlan}
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4${isEnhancingPlan ? " animate-spin" : ""}`} />
                 <span>{pick({ "zh-CN": "重新生成", "zh-TW": "重新生成", en: "Regenerate", ja: "再生成" })}</span>
               </button>
               <button
