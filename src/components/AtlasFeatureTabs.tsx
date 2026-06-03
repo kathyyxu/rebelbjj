@@ -121,17 +121,6 @@ export const AtlasFeatureTabs = ({ progressDay = 1 }: AtlasFeatureTabsProps) => 
             })}
           </span>
         </Link>
-        <Link to="/training-plan" className="atlas-subnav-link phantom-support-link">
-          <span>
-            🤖{" "}
-            {pick({
-              "zh-CN": "AI教练方案",
-              "zh-TW": "AI教練方案",
-              en: "AI Coach",
-              ja: "AIコーチ",
-            })}
-          </span>
-        </Link>
         <Link to="/profile" className="atlas-subnav-link phantom-support-link">
           <span>
             👤{" "}
